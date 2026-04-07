@@ -5,18 +5,25 @@ import ComparisonView from "./components/ComparisonView";
 function App() {
   return (
     <div className="container">
-      <h1>🎯 Trainee Evaluation System</h1>
+      <h1 style={{ textAlign: "center" }}>
+        🎯 Trainee Evaluation System
+      </h1>
 
-      <div className="card">
-        <AdminPositions />
-      </div>
+      <div className="grid">
+        <div className="card">
+          <h2>⚙️ Manage Positions</h2>
+          <AdminPositions />
+        </div>
 
-      <div className="card">
-        <TraineeForm />
-      </div>
+        <div className="card">
+          <h2>📝 Evaluate Trainee</h2>
+          <TraineeForm />
+        </div>
 
-      <div className="card">
-        <ComparisonView />
+        <div className="card full-width">
+          <h2>📊 Comparison</h2>
+          <ComparisonView />
+        </div>
       </div>
     </div>
   );

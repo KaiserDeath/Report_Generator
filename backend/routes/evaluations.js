@@ -1,68 +1,137 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Calculate score helper
-function calculateScore(evaluation, weights) {
-  let score = 0;
-  for (let skillId in weights) {
-    score += (evaluation[skillId] || 0) * weights[skillId];
-  }
-  return Number(score.toFixed(2));
+// --- DEBUG: Check if Key is Loading ---
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ ERROR: GEMINI_API_KEY is missing from .env file!");
+} else {
+  console.log("✅ GEMINI_API_KEY detected.");
 }
 
-// Evaluate trainee
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
 router.post("/", async (req, res) => {
-  const { trainee_name, position_id, evaluation } = req.body;
+  try {
+    const { trainee_name, position_id, evaluation } = req.body;
 
-  // Get weights
-  const weightsRes = await pool.query(
-    "SELECT skill_id, weight FROM position_skills WHERE position_id = $1",
-    [position_id]
-  );
+    // 1. Fetch Weights and Metadata
+    const data = await pool.query(`
+      SELECT ps.skill_id, ps.weight AS skill_internal_weight, pcw.weight AS cat_global_weight, 
+             c.name AS category_name, p.name AS position_name
+      FROM public.position_skills ps
+      JOIN public.skills s ON ps.skill_id = s.id
+      JOIN public.categories c ON s.category_id = c.id
+      JOIN public.positions p ON ps.position_id = p.id
+      JOIN public.position_category_weights pcw ON (pcw.category_id = c.id AND pcw.position_id = ps.position_id)
+      WHERE ps.position_id = $1
+    `, [position_id]);
 
-  const weights = {};
-  weightsRes.rows.forEach(row => {
-    weights[row.skill_id] = row.weight;
-  });
+    if (data.rows.length === 0) {
+      return res.status(404).json({ error: "Position configuration not found" });
+    }
 
-  // Calculate score
-  const score = calculateScore(evaluation, weights);
+    const posName = data.rows[0].position_name;
+    const categories = {};
+    let finalGeneralScore = 0;
 
-  // Save evaluation
-  const evalRes = await pool.query(
-    "INSERT INTO evaluations (trainee_name, position_id, score) VALUES ($1, $2, $3) RETURNING id",
-    [trainee_name, position_id, score]
-  );
+    // 2. Calculation Logic
+    data.rows.forEach(row => {
+      const traineeRating = evaluation[row.skill_id] || 0;
+      const skillContribution = traineeRating * row.skill_internal_weight;
+      if (!categories[row.category_name]) {
+        categories[row.category_name] = { score: 0, weight: Number(row.cat_global_weight) };
+      }
+      categories[row.category_name].score += skillContribution;
+    });
 
-  const evaluationId = evalRes.rows[0].id;
+    const categoryBreakdown = {};
+    Object.keys(categories).forEach(cat => {
+      categoryBreakdown[cat] = Number(categories[cat].score.toFixed(2));
+      finalGeneralScore += (categories[cat].score * categories[cat].weight);
+    });
 
-  // Save details
-  for (let skillId in evaluation) {
-    await pool.query(
-      "INSERT INTO evaluation_details (evaluation_id, skill_id, value) VALUES ($1, $2, $3)",
-      [evaluationId, skillId, evaluation[skillId]]
+    const finalScoreNum = Number(finalGeneralScore.toFixed(2));
+
+    // 3. AI Generation (MERGED & OPTIMIZED)
+    let aiFeedback = "Feedback unavailable.";
+    
+    try {
+      // ✅ Using gemini-2.5-flash-lite as confirmed by your check_models.js
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash-lite",
+        systemInstruction: "You are a professional corporate trainer. Your feedback is always exactly 3 sentences long, supportive, and strictly follows the data provided. Structure: Sentence 1 identifies a strength, Sentence 2 identifies a growth area, Sentence 3 provides a brief encouraging closing.",
+      });
+
+      // ✅ Merged generationConfig for maximum speed
+      const generationConfig = {
+        maxOutputTokens: 250,
+        temperature: 0.1, // Lower temperature = faster and more consistent
+        topP: 0.95,
+      };
+      
+      const prompt = `
+        Provide a professional evaluation for ${trainee_name} for the ${posName} position. 
+        Total Score: ${finalScoreNum}%. 
+        Category Performance: ${JSON.stringify(categoryBreakdown)}.
+      `;
+
+      // Trigger generation with optimized config
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig
+      });
+      
+      const response = await result.response;
+      const text = response.text(); 
+      
+      if (text) {
+        aiFeedback = text.trim();
+        console.log(`✅ AI successfully generated report for ${trainee_name}`);
+      }
+    } catch (aiErr) {
+      console.error("❌ Gemini API Detail Error:", aiErr.message);
+      // Fallback message if Quota is hit again
+      aiFeedback = "AI assessment currently unavailable due to high traffic. Scores have been saved.";
+    }
+
+    // 4. Save to PostgreSQL
+    const savedEval = await pool.query(
+      `INSERT INTO public.evaluations (trainee_name, position_id, score, category_breakdown, ai_feedback) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
+      [trainee_name, position_id, finalScoreNum, JSON.stringify(categoryBreakdown), aiFeedback]
     );
-  }
 
-  res.json({ score });
+    // 5. Send Response back to Frontend
+    res.json({
+      id: savedEval.rows[0].id,
+      generalEvaluation: finalScoreNum,
+      categoryBreakdown,
+      aiFeedback 
+    });
+
+  } catch (err) {
+    console.error("Global Route Error:", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-// Get all evaluations
+// GET route for History
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT e.id, e.trainee_name, e.score, p.name AS position
-      FROM evaluations e
-      JOIN positions p ON e.position_id = p.id
-      ORDER BY e.score DESC
+      SELECT e.*, p.name AS position_name FROM public.evaluations e
+      JOIN public.positions p ON e.position_id = p.id 
+      ORDER BY e.created_at DESC
     `);
-
     res.json(result.rows);
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error fetching evaluations" });
+    console.error("Fetch Error:", err.message);
+    res.status(500).json({ error: "Error fetching history" });
   }
 });
+
 module.exports = router;

@@ -1,0 +1,57 @@
+# --- SYSTEM FILES ---
+.DS_Store
+Thumbs.db
+
+# --- DEPENDENCIES ---
+# Never push these; they are re-installed via 'npm install'
+node_modules/
+jspm_packages/
+
+# --- SECRETS & CONFIG ---
+# IMPORTANT: This hides your database passwords and API keys
+.env
+*.env
+.env.local
+
+# --- BUILD & OUTPUT ---
+# Only ignore these if you are using a compiler like TypeScript
+dist/
+build/
+out/
+
+# --- LOGS ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- EDITOR SETTINGS ---
+# Optional: some teams prefer to push these, but usually they are ignored
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+
+# --- TESTING ---
+coverage/
+*.lcov
+
+# --- TEMPORARY ---
+.tmp/
+.cache/
+
+# --- VITE/FRONTEND SPECIFIC ---
+.vite/
+*.eslintcache
+
+# --- OS SPECIFIC ---
+# Helps if you or a teammate uses a different OS
+.history/
+bin/
+obj/
+
+# --- BACKEND SPECIFIC ---
+# Ignore local database dumps if you ever export from Supabase
+*.sql
