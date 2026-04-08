@@ -134,6 +134,7 @@ router.post("/", async (req, res) => {
   try {
     const { 
       trainee_name, 
+      trainer_name,
       position_id, 
       evaluation, 
       training_start, 
@@ -232,12 +233,12 @@ router.post("/", async (req, res) => {
 
     const savedEval = await pool.query(
       `INSERT INTO public.evaluations (
-        trainee_name, position_id, score, category_breakdown, 
+        trainee_name, trainer_name, position_id, score, category_breakdown, 
         ai_feedback, training_start, training_end
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, created_at`,
       [
-        trainee_name, position_id, finalScoreNum, 
+        trainee_name, trainer_name, position_id, finalScoreNum, 
         JSON.stringify(categoryBreakdown), aiFeedback,
         training_start, training_end    
       ]

@@ -36,6 +36,28 @@
     overflow-wrap: break-word;
 }
 
+/* Page break and keep rules for PDF printing */
+h1, h2, h3, .report-category-header {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.ai-report-content,
+.ai-feedback-box,
+.report-category-group {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.ai-report-content {
+  display: block;
+  overflow: hidden;
+}
+
+.report-textarea, .static-notes-box {
+  break-inside: avoid;
+}
+
 /* Handle the actual "Print" command from Puppeteer */
 @media print {
     body {
@@ -103,4 +125,15 @@ body.printing-report .main-content {
 
 body.printing-report .ai-report-content {
   display: block !important;
+}
+
+.signature-area {
+  margin-top: 50px;
+  text-align: left;
+  width: 250px;
+}
+
+.signature-line {
+  border-bottom: 1px solid #333;
+  margin-bottom: 10px;
 }

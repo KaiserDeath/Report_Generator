@@ -34,6 +34,7 @@ function PrintableReport() {
           <div className="doc-meta-grid">
             <div><strong>Trainee:</strong> {report.trainee_name}</div>
             <div><strong>Position:</strong> {report.position_name}</div>
+            <div><strong>Trainer:</strong> {report.trainer_name || "N/A"}</div>
             <div><strong>Period:</strong> {new Date(report.training_start).toLocaleDateString("en-GB")} - {new Date(report.training_end).toLocaleDateString("en-GB")}</div>
             <div><strong>Score:</strong> {Math.round(report.score)}%</div>
           </div>
@@ -63,7 +64,7 @@ function PrintableReport() {
 
         <div className="ai-report-container">
           <div className="ai-report-header">
-            <h3>AI Performance Insights</h3>
+            <h3>Performance Insights</h3>
           </div>
           <div className="ai-report-content" style={{ display: 'block' }}>
             {report.ai_feedback}
@@ -75,6 +76,14 @@ function PrintableReport() {
           <div className="report-textarea" style={{ border: '1px solid #eee', minHeight: '150px' }}>
             {report.trainer_notes || "No notes provided."}
           </div>
+        </div>
+
+        <div className="report-doc-footer">
+          <div className="signature-area">
+            <div className="signature-line"></div>
+            <p>Trainer Signature: <strong>{report.trainer_name || "N/A"}</strong></p>
+          </div>
+          <p className="report-watermark">Prepared by TrainerHub</p>
         </div>
       </div>
     </div>

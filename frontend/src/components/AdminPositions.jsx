@@ -1,5 +1,18 @@
 import { useState, useEffect } from "react";
 import { API_URL } from "../api/api";
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 
 function AdminPositions() {
   const [positions, setPositions] = useState([]);
@@ -64,96 +77,122 @@ function AdminPositions() {
   };
 
   return (
-    <div className="admin-container">
-      <header className="page-header">
-        <h1>Position Management</h1>
-        <p>Configure weights and skill impacts</p>
-      </header>
+    <Box className="admin-container" p={{ base: 4, md: 6 }}>
+      <Box bg="white" p={{ base: 5, md: 8 }} rounded="2xl" shadow="sm" mb={6}>
+        <Heading as="h1" size="xl" mb={2}>
+          Position Management
+        </Heading>
+        <Text color="gray.600">Configure weights and skill impacts</Text>
 
-      <div className="card">
-        <div className="modal-selector">
-          <label>Select Role to Manage:</label>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <select value={selectedPosition} onChange={handlePositionChange} className="role-select">
+        <Flex direction={{ base: "column", md: "row" }} align="center" gap={4} mt={6}>
+          <FormControl maxW={{ base: "100%", md: "420px" }}>
+            <FormLabel>Select Role to Manage</FormLabel>
+            <Select value={selectedPosition} onChange={handlePositionChange} bg="gray.50">
               <option value="">-- Choose a Role --</option>
-              {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            
+              {positions.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Flex gap={3} wrap="wrap">
             {selectedPosition && !isEditing && (
-              <button className="btn-primary" onClick={() => setIsEditing(true)}>
+              <Button colorScheme="blue" onClick={() => setIsEditing(true)}>
                 ✏️ Edit Mode
-              </button>
+              </Button>
             )}
             {isEditing && (
-              <button className="btn-success" onClick={saveAll}>💾 Save Changes</button>
+              <Button colorScheme="green" onClick={saveAll}>
+                💾 Save Changes
+              </Button>
             )}
-          </div>
-        </div>
-      </div>
+          </Flex>
+        </Flex>
+      </Box>
 
       {selectedPosition ? (
-        <div className="grid">
-          {Object.keys(groupedSkills).map((catName) => (
-            <div key={catName} className="card">
-              <div className="skill-row" style={{ borderBottom: '2px solid #eee', marginBottom: '15px' }}>
-                <h2 style={{ margin: 0 }}>{catName}</h2>
-                <div className="cat-impact-box">
-                  <label style={{ margin: 0, fontSize: '0.8rem' }}>Global Impact:</label>
-                  {isEditing ? (
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input 
-                        className="score-input"
-                        type="number" 
-                        value={catWeights[groupedSkills[catName].id] ? Math.round(catWeights[groupedSkills[catName].id] * 100) : ""} 
-                        onChange={(e) => {
-                          const val = Number(e.target.value) / 100;
-                          setCatWeights({...catWeights, [groupedSkills[catName].id]: val});
-                        }}
-                      />
-                      <span style={{ marginLeft: '5px' }}>%</span>
-                    </div>
-                  ) : (
-                    <span className="badge-score">
-                      {catWeights[groupedSkills[catName].id] ? Math.round(catWeights[groupedSkills[catName].id] * 100) : 0}%
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="skill-list">
-                {groupedSkills[catName].skills.map((skill) => (
-                  <div key={skill.id} className="skill-row">
-                    <span>{skill.name}</span>
+        <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
+          {Object.keys(groupedSkills).map((catName) => {
+            const categoryId = groupedSkills[catName].id;
+            return (
+              <Box key={catName} bg="white" p="5" rounded="2xl" shadow="sm">
+                <Flex align="center" justify="space-between" mb="4" pb="3" borderBottom="2px solid" borderColor="gray.100">
+                  <Heading as="h2" size="md">
+                    {catName}
+                  </Heading>
+                  <Flex align="center" gap={2}>
+                    <Text fontSize="sm" color="gray.600">
+                      Global Impact:
+                    </Text>
                     {isEditing ? (
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <input 
-                          className="score-input"
-                          type="number" 
-                          value={weights[skill.id] ? Math.round(weights[skill.id] * 100) : ""} 
+                      <Flex align="center" gap={2}>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={categoryId ? (catWeights[categoryId] ? Math.round(catWeights[categoryId] * 100) : "") : ""}
                           onChange={(e) => {
                             const val = Number(e.target.value) / 100;
-                            setWeights({...weights, [skill.id]: val});
+                            setCatWeights({ ...catWeights, [categoryId]: val });
                           }}
+                          maxW="120px"
+                          bg="gray.50"
                         />
-                        <span style={{ marginLeft: '5px' }}>%</span>
-                      </div>
+                        <Text>%</Text>
+                      </Flex>
                     ) : (
-                      <span className="static-skill-weight">
-                        {weights[skill.id] ? Math.round(weights[skill.id] * 100) : 0}%
-                      </span>
+                      <Text color="blue.600" fontWeight="bold">
+                        {categoryId && catWeights[categoryId] ? Math.round(catWeights[categoryId] * 100) : 0}%
+                      </Text>
                     )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+                  </Flex>
+                </Flex>
+
+                <Stack spacing="3">
+                  {groupedSkills[catName].skills.map((skill) => (
+                    <Flex
+                      key={skill.id}
+                      justify="space-between"
+                      align="center"
+                      py="3"
+                      borderBottom="1px solid"
+                      borderColor="gray.100"
+                    >
+                      <Text>{skill.name}</Text>
+                      {isEditing ? (
+                        <Flex align="center" gap={2}>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={weights[skill.id] ? Math.round(weights[skill.id] * 100) : ""}
+                            onChange={(e) => {
+                              const val = Number(e.target.value) / 100;
+                              setWeights({ ...weights, [skill.id]: val });
+                            }}
+                            maxW="120px"
+                            bg="gray.50"
+                          />
+                          <Text>%</Text>
+                        </Flex>
+                      ) : (
+                        <Text color="gray.600">
+                          {weights[skill.id] ? Math.round(weights[skill.id] * 100) : 0}%
+                        </Text>
+                      )}
+                    </Flex>
+                  ))}
+                </Stack>
+              </Box>
+            );
+          })}
+        </SimpleGrid>
       ) : (
-        <div className="card" style={{ textAlign: 'center', padding: '50px' }}>
-          <p>Please select a position to manage its configuration.</p>
-        </div>
+        <Box bg="white" p="10" rounded="2xl" shadow="sm" textAlign="center">
+          <Text color="gray.600">Please select a position to manage its configuration.</Text>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 

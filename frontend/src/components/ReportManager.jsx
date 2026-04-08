@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { API_URL } from "../api/api";
 import Swal from "sweetalert2";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Flex,
+  Heading,
+  Input,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  Text,
+  Stack,
+} from "@chakra-ui/react";
 
 function ReportManager() {
   const [evaluations, setEvaluations] = useState([]);
@@ -113,162 +130,174 @@ function ReportManager() {
   );
 
   return (
-    <div className="report-manager">
-      <header className="report-header">
-        <h1>Trainee Archive</h1>
-        <div className="header-actions">
-          {isEditMode && selectedIds.length > 0 && (
-            <button className="btn-delete" onClick={deleteSelected}>
-              Delete Selected ({selectedIds.length})
-            </button>
-          )}
-          <button 
-            onClick={() => { setIsEditMode(!isEditMode); setSelectedIds([]); }}
-            className={isEditMode ? "btn-secondary" : "btn-primary"}
-          >
-            {isEditMode ? "Cancel" : "Manage Files"}
-          </button>
-        </div>
-      </header>
+    <Box className="report-manager" p={{ base: 4, md: 6 }}>
+      <Box bg="white" p={{ base: 5, md: 6 }} rounded="2xl" shadow="sm" mb={6}>
+        <Flex direction={{ base: "column", md: "row" }} align="center" justify="space-between" gap={4}>
+          <Box>
+            <Heading as="h1" size="xl">
+              Trainee Archive
+            </Heading>
+          </Box>
 
-      <div className="search-container">
-        <input 
-          type="text" 
-          placeholder="Search archives..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-          className="search-input"
-        />
-      </div>
+          <Flex gap={3} wrap="wrap">
+            {isEditMode && selectedIds.length > 0 && (
+              <Button colorScheme="red" onClick={deleteSelected}>
+                Delete Selected ({selectedIds.length})
+              </Button>
+            )}
+            <Button
+              colorScheme={isEditMode ? "gray" : "blue"}
+              variant={isEditMode ? "outline" : "solid"}
+              onClick={() => { setIsEditMode(!isEditMode); setSelectedIds([]); }}
+            >
+              {isEditMode ? "Cancel" : "Manage Files"}
+            </Button>
+          </Flex>
+        </Flex>
 
-      <table className="report-table">
-        <thead>
-          <tr>
-            {isEditMode && <th>Select</th>}
-            <th>Name</th>
-            <th>Training Time</th>
-            <th>Score</th>
-            <th>Reports</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredReports.map((e) => (
-            <React.Fragment key={e.id}>
-              <tr className={selectedIds.includes(e.id) ? "selected-row" : ""}>
-                {isEditMode && (
-                  <td>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.includes(e.id)} 
-                      onChange={() => handleSelect(e.id)}
-                    />
-                  </td>
+        <Box mt={6}>
+          <Input
+            placeholder="Search archives..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            bg="gray.50"
+          />
+        </Box>
+      </Box>
+
+      <TableContainer>
+        <Table variant="simple" className="report-table">
+          <Thead>
+            <Tr>
+              {isEditMode && <Th>Select</Th>}
+              <Th>Name</Th>
+              <Th>Training Time</Th>
+              <Th>Score</Th>
+              <Th>Reports</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {filteredReports.map((e) => (
+              <React.Fragment key={e.id}>
+                <Tr className={selectedIds.includes(e.id) ? "selected-row" : ""}>
+                  {isEditMode && (
+                    <Td>
+                      <Checkbox
+                        isChecked={selectedIds.includes(e.id)}
+                        onChange={() => handleSelect(e.id)}
+                      />
+                    </Td>
+                  )}
+                  <Td>
+                    <Box className="trainee-info">
+                      <Text fontWeight="bold" fontSize="md">{e.trainee_name}</Text>
+                      <Text color="gray.500" fontSize="sm">{e.position_name}</Text>
+                    </Box>
+                  </Td>
+                  <Td>{formatDate(e.training_start)} — {formatDate(e.training_end)}</Td>
+                  <Td className="grade-cell"><span className="badge-score">{Math.round(e.score)}%</span></Td>
+                  <Td>
+                    <Button size="sm" variant="outline" onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}>
+                      {expandedId === e.id ? "Close" : "View Report"}
+                    </Button>
+                  </Td>
+                </Tr>
+
+                {expandedId === e.id && (
+                  <Tr className="expanded-row">
+                    <Td colSpan={isEditMode ? 5 : 4}>
+                      <Box className="formal-report-paper">
+                        <Box className="report-doc-header">
+                          <Heading as="h2" size="lg" mb="4">
+                            PERFORMANCE EVALUATION REPORT
+                          </Heading>
+                          <Box className="doc-meta-grid">
+                            <Box><Text fontWeight="bold">Trainee:</Text> {e.trainee_name}</Box>
+                            <Box><Text fontWeight="bold">Position:</Text> {e.position_name}</Box>
+                            <Box><Text fontWeight="bold">Period:</Text> {formatDate(e.training_start)} - {formatDate(e.training_end)}</Box>
+                            <Box><Text fontWeight="bold">Score:</Text> {Math.round(e.score)}%</Box>
+                            <Box className="no-print">
+                              <Button colorScheme="teal" onClick={() => downloadPDF(e.id)}>
+                                📥 Download Professional PDF
+                              </Button>
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        <Box className="report-doc-section">
+                          <Heading as="h3" size="md" mb="4">
+                            Detailed Competency Breakdown
+                          </Heading>
+                          {e.category_breakdown && typeof e.category_breakdown === 'object' ? (
+                            Object.entries(e.category_breakdown).map(([category, data]) => (
+                              <Box key={category} className="report-category-group" mb="5">
+                                <Box className="report-category-header">
+                                  <Text>{category}</Text>
+                                  <Text>{data.category_avg ? Math.round(data.category_avg) : 0}%</Text>
+                                </Box>
+                                <Box as="table" className="report-skill-table">
+                                  <Box as="tbody">
+                                    {data.skills?.map((skill, idx) => (
+                                      <Box as="tr" key={idx}>
+                                        <Box as="td">{skill.skill_name}</Box>
+                                        <Box as="td" className="text-right">{skill.score}/5</Box>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </Box>
+                            ))
+                          ) : <Text>Detailed breakdown unavailable.</Text>}
+                        </Box>
+
+                        <Box className="ai-report-container">
+                          <Flex className="ai-report-header" align="center" justify="space-between">
+                            <Heading as="h3" size="md">Performance Insights</Heading>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="no-print"
+                              onClick={() => setShowAI(prev => ({ ...prev, [e.id]: !prev[e.id] }))}
+                            >
+                              {showAI[e.id] ? "Hide Details" : "Show Details"}
+                            </Button>
+                          </Flex>
+                          {showAI[e.id] && (
+                            <Box className="ai-report-content" mt="4">
+                              {e.ai_feedback || "No automated feedback available."}
+                            </Box>
+                          )}
+                        </Box>
+
+                        <Box className="report-doc-section">
+                          <Flex className="note-header" align="center" justify="space-between" mb="4">
+                            <Heading as="h3" size="md">Trainer Observations</Heading>
+                            <Box className="no-print">
+                              {editNoteId === e.id ? (
+                                <Button colorScheme="blue" size="sm" onClick={() => saveNote(e.id)}>Save</Button>
+                              ) : (
+                                <Button colorScheme="gray" size="sm" onClick={() => startEditing(e)}>Edit</Button>
+                              )}
+                            </Box>
+                          </Flex>
+                          <Box as="textarea"
+                            value={editNoteId === e.id ? tempNoteValue : (e.trainer_notes || "")}
+                            onChange={(evt) => setTempNoteValue(evt.target.value)}
+                            disabled={editNoteId !== e.id}
+                            className={editNoteId === e.id ? "report-textarea editing" : "report-textarea"}
+                            style={{ width: '100%', minHeight: '150px', padding: '12px', borderRadius: '10px', borderColor: '#e2e8f0', resize: 'vertical' }}
+                          />
+                        </Box>
+                      </Box>
+                    </Td>
+                  </Tr>
                 )}
-                <td>
-                  <div className="trainee-info">
-                    <strong className="trainee-name">{e.trainee_name}</strong>
-                    <div className="position-subtext">{e.position_name}</div>
-                  </div>
-                </td>
-                <td>{formatDate(e.training_start)} — {formatDate(e.training_end)}</td>
-                <td className="grade-cell"><span className="badge-score">{Math.round(e.score)}%</span></td>
-                <td>
-                  <button className="btn-view" onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}>
-                    {expandedId === e.id ? "Close" : "View Report"}
-                  </button>
-                </td>
-              </tr>
-
-              {expandedId === e.id && (
-                <tr className="expanded-row">
-                  <td colSpan={isEditMode ? "5" : "4"}>
-                    <div className="formal-report-paper">
-                      <div className="report-doc-header">
-                        <h2>PERFORMANCE EVALUATION REPORT</h2>
-                        <div className="doc-meta-grid">
-                          <div><strong>Trainee:</strong> {e.trainee_name}</div>
-                          <div><strong>Position:</strong> {e.position_name}</div>
-                          <div><strong>Period:</strong> {formatDate(e.training_start)} - {formatDate(e.training_end)}</div>
-                          <div><strong>Score:</strong> {Math.round(e.score)}%</div>
-                          
-                          {/* ✅ PUPPETEER DOWNLOAD TRIGGER */}
-                          <div className="no-print">
-                             <button className="btn-pdf-download" onClick={() => downloadPDF(e.id)}>
-                               📥 Download Professional PDF
-                             </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ... rest of your component (Breakdown, AI, Notes) remains the same ... */}
-                      <div className="report-doc-section">
-                        <h3>Detailed Competency Breakdown</h3>
-                        {e.category_breakdown && typeof e.category_breakdown === 'object' ? (
-                          Object.entries(e.category_breakdown).map(([category, data]) => (
-                            <div key={category} className="report-category-group">
-                              <div className="report-category-header">
-                                <span>{category}</span>
-                                <span>{data.category_avg ? Math.round(data.category_avg) : 0}%</span>
-                              </div>
-                              <table className="report-skill-table">
-                                <tbody>
-                                  {data.skills?.map((skill, idx) => (
-                                    <tr key={idx}>
-                                      <td>{skill.skill_name}</td>
-                                      <td className="text-right">{skill.score}/5</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ))
-                        ) : <p>Detailed breakdown unavailable.</p>}
-                      </div>
-
-                      <div className="ai-report-container">
-                        <div className="ai-report-header">
-                          <h3>AI Performance Insights</h3>
-                          <button 
-                            className="btn-toggle-ai no-print"
-                            onClick={() => setShowAI(prev => ({ ...prev, [e.id]: !prev[e.id] }))}
-                          >
-                            {showAI[e.id] ? "Hide AI Report" : "Show AI Report"}
-                          </button>
-                        </div>
-                        {showAI[e.id] && (
-                          <div className="ai-report-content">
-                            {e.ai_feedback || "No automated feedback available."}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="report-doc-section">
-                        <div className="note-header">
-                          <h3>Trainer Observations</h3>
-                          <div className="no-print">
-                            {editNoteId === e.id ? (
-                              <button className="btn-save-note" onClick={() => saveNote(e.id)}>Save</button>
-                            ) : (
-                              <button className="btn-edit-note" onClick={() => startEditing(e)}>Edit</button>
-                            )}
-                          </div>
-                        </div>
-                        <textarea 
-                          value={editNoteId === e.id ? tempNoteValue : (e.trainer_notes || "")}
-                          onChange={(evt) => setTempNoteValue(evt.target.value)}
-                          disabled={editNoteId !== e.id}
-                          className={editNoteId === e.id ? "report-textarea editing" : "report-textarea"}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </React.Fragment>
+            ))}
+          </Tbody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 }
 

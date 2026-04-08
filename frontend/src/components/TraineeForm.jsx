@@ -1,12 +1,26 @@
 import { useState, useEffect } from "react";
 import { API_URL } from "../api/api";
 import Swal from "sweetalert2"; // 1. Import SweetAlert2
+import {
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  SimpleGrid,
+  Heading,
+  Textarea,
+  Stack,
+} from "@chakra-ui/react";
 
 function TraineeForm() {
   const [positions, setPositions] = useState([]);
   const [skills, setSkills] = useState([]);
   const [selectedPosition, setSelectedPosition] = useState("");
-  const [traineeName, setTraineeName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [trainerName, setTrainerName] = useState("");
   const [scores, setScores] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +68,7 @@ function TraineeForm() {
 
   const handleSubmit = async () => {
     // 2. SweetAlert2 Validation Replacement
-    if (!selectedPosition || !traineeName || !trainingStart || !trainingEnd) {
+    if (!selectedPosition || !firstName || !lastName || !trainingStart || !trainingEnd) {
       return Swal.fire({
         icon: "warning",
         title: "Missing Information",
@@ -69,7 +83,8 @@ function TraineeForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          trainee_name: traineeName,
+          trainee_name: `${firstName} ${lastName}`.trim(),
+          trainer_name: trainerName,
           position_id: selectedPosition,
           evaluation: scores,
           training_start: trainingStart,
@@ -129,7 +144,9 @@ function TraineeForm() {
       setIsEditing(false); 
       
       // Reset Form
-      setTraineeName("");
+      setFirstName("");
+      setLastName("");
+      setTrainerName("");
       setSelectedPosition("");
       setScores({});
       setTrainerNotes("");
@@ -149,87 +166,133 @@ function TraineeForm() {
   }, {});
 
   return (
-    <div className="container">
-      <h1>Trainee Evaluation</h1>
+    <Box maxW="1200px" mx="auto" px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }} bg="gray.50" minH="calc(100vh - 40px)">
+      <Heading as="h1" size="2xl" mb="6" textAlign="center">
+        Trainee Evaluation
+      </Heading>
 
-      <div className="card">
-        <div className="grid">
-          <div>
-            <label>Trainee Name</label>
-            <input 
-              type="text" 
-              value={traineeName} 
-              onChange={(e) => setTraineeName(e.target.value)} 
-              placeholder="Enter full name"
+      <Box bg="white" p={{ base: 5, md: 8 }} rounded="2xl" shadow="sm" mb="6">
+        <SimpleGrid columns={{ base: 1, md: 2 }} gap="6">
+          <FormControl>
+            <FormLabel>First Name</FormLabel>
+            <Input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Enter first name"
+              bg="gray.50"
             />
-          </div>
-          <div>
-            <label>Position</label>
-            <select value={selectedPosition} onChange={handlePositionChange}>
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Last Name</FormLabel>
+            <Input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Enter last name"
+              bg="gray.50"
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Evaluated By (Trainer)</FormLabel>
+            <Input
+              type="text"
+              value={trainerName}
+              onChange={(e) => setTrainerName(e.target.value)}
+              placeholder="Enter your name"
+              bg="gray.50"
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Position</FormLabel>
+            <Select value={selectedPosition} onChange={handlePositionChange} bg="gray.50">
               <option value="">Select a Position</option>
-              {positions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label>Training Start</label>
-            <input 
-              type="date" 
-              value={trainingStart} 
-              onChange={(e) => setTrainingStart(e.target.value)} 
+              {positions.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Training Start</FormLabel>
+            <Input
+              type="date"
+              value={trainingStart}
+              onChange={(e) => setTrainingStart(e.target.value)}
+              bg="gray.50"
             />
-          </div>
-          <div>
-            <label>Training End</label>
-            <input 
-              type="date" 
-              value={trainingEnd} 
-              onChange={(e) => setTrainingEnd(e.target.value)} 
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Training End</FormLabel>
+            <Input
+              type="date"
+              value={trainingEnd}
+              onChange={(e) => setTrainingEnd(e.target.value)}
+              bg="gray.50"
             />
-          </div>
-        </div>
-      </div>
+          </FormControl>
+        </SimpleGrid>
+      </Box>
 
       {selectedPosition && (
-        <div className="grid">
+        <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" mb="6">
           {Object.keys(groupedSkills).map((catName) => (
-            <div key={catName} className="card">
-              <h2>{catName}</h2>
-              {groupedSkills[catName].map((skill) => (
-                <div key={skill.id} className="skill-row">
-                  <span>{skill.name}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={scores[skill.id] ?? ""}
-                    onKeyDown={(e) => {
+            <Box key={catName} bg="white" p="5" rounded="2xl" shadow="sm">
+              <Heading as="h2" size="md" mb="4">
+                {catName}
+              </Heading>
+              <Stack spacing="3">
+                {groupedSkills[catName].map((skill) => (
+                  <FormControl key={skill.id} display="flex" alignItems="center" justifyContent="space-between">
+                    <FormLabel mb="0" flex="1" mr="4">
+                      {skill.name}
+                    </FormLabel>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={scores[skill.id] ?? ""}
+                      onKeyDown={(e) => {
                         if (["e", "E", "+", "-", "."].includes(e.key)) {
                           e.preventDefault();
                         }
-                    }}
-                    onChange={(e) => handleScoreChange(skill.id, e.target.value)}
-                    className="score-input"
-                  />
-                </div>
-              ))}
-            </div>
+                      }}
+                      onChange={(e) => handleScoreChange(skill.id, e.target.value)}
+                      maxW="120px"
+                      bg="gray.50"
+                    />
+                  </FormControl>
+                ))}
+              </Stack>
+            </Box>
           ))}
-          <div className="full-width">
-            <button onClick={handleSubmit} disabled={isSubmitting} className="btn-success">
-              {isSubmitting ? "🤖 AI Analyzing..." : "Submit Evaluation"}
-            </button>
-          </div>
-        </div>
+
+          <Box gridColumn={{ base: "auto", md: "span 2" }} textAlign="right">
+            <Button
+              colorScheme="green"
+              size="lg"
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              loadingText="Analyzing..."
+            >
+              Submit Evaluation
+            </Button>
+          </Box>
+        </SimpleGrid>
       )}
 
       {showModal && result && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Evaluation Complete: {traineeName}</h2>
+            <h2>Evaluation Complete: {`${firstName} ${lastName}`.trim()}</h2>
             
             <div className="ai-feedback-section">
-              <h4>🤖 AI Report Insights (Score: {result.generalEvaluation}%)</h4>
+              <h4>Performance Report Insights (Score: {result.generalEvaluation}%)</h4>
               <p>{result.aiFeedback}</p>
             </div>
 
@@ -267,7 +330,7 @@ function TraineeForm() {
           </div>
         </div>
       )}
-    </div>
+    </Box>
   );
 }
 
