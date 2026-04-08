@@ -67,6 +67,11 @@ router.get("/:id/pdf", async (req, res) => {
 
     const page = await browser.newPage();
 
+    // Listen for console messages and errors from the page
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('error', err => console.error('PAGE ERROR:', err));
+    page.on('pageerror', err => console.error('PAGE CRASH:', err));
+
     // Set viewport to a standard desktop size for high-quality capture
     await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
 
@@ -78,12 +83,12 @@ router.get("/:id/pdf", async (req, res) => {
     // 1. Navigate to the page
     await page.goto(targetUrl, {
       waitUntil: ["networkidle0", "domcontentloaded"],
-      timeout: 30000
+      timeout: 60000
     });
 
     // 2. CRITICAL: Wait for the formal-report-paper to exist in the DOM.
     try {
-      await page.waitForSelector('.formal-report-paper', { timeout: 10000 });
+      await page.waitForSelector('.formal-report-paper', { timeout: 20000 });
     } catch (timeoutErr) {
       console.error("❌ CSS Selector '.formal-report-paper' not found.");
       throw new Error("Report paper element not found on the page.");
@@ -109,7 +114,8 @@ router.get("/:id/pdf", async (req, res) => {
   } catch (err) {
     if (browser) await browser.close();
     console.error("❌ PDF Generation Error:", err.message);
-    res.status(500).json({ error: "Failed to capture the report view. Ensure the frontend is running." });
+    console.error("Full error stack:", err.stack);
+    res.status(500).json({ error: `PDF Generation failed: ${err.message}` });
   }
 });
 
