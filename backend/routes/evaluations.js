@@ -2,9 +2,130 @@ require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const puppeteer = require("puppeteer");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
+/**
+ * 🤖 HELPER: Smart AI Model Switcher
+ * Attempts a prioritized list of models in case one is offline or overloaded.
+ */
+async function generateWithFallback(prompt, config) {
+  const modelWishlist = [
+    'gemini-3.1-pro-preview',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-2.5-pro',
+    'gemini-2.0-flash',
+    'gemini-pro-latest',
+    'gemini-flash-latest'
+  ];
+
+  let lastError;
+
+  for (const modelName of modelWishlist) {
+    try {
+      console.log(`🤖 Attempting AI with: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
+      
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: config,
+      });
+
+      const response = await result.response;
+      return response.text().trim();
+    } catch (err) {
+      console.warn(`⚠️ ${modelName} failed: ${err.message}`);
+      lastError = err;
+      // Continue to next model in wishlist
+    }
+  }
+  // If we exhaust the list, throw the last caught error
+  throw lastError;
+}
+
+/**
+ * ✅ MERGED & IMPROVED: GENERATE PDF (GET /evaluations/:id/pdf)
+ * Captures specifically the "formal-report-paper" view from the frontend.
+ */
+router.get("/:id/pdf", async (req, res) => {
+  let browser;
+  try {
+    const { id } = req.params;
+
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+
+    // Set viewport to a standard desktop size for high-quality capture
+    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
+
+    // Target the specific "Printable" route on your frontend
+    const targetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/report-print/${id}`;
+
+    console.log(`📡 Puppeteer is navigating to: ${targetUrl}`);
+
+    // 1. Navigate to the page
+    await page.goto(targetUrl, {
+      waitUntil: ["networkidle0", "domcontentloaded"],
+      timeout: 30000
+    });
+
+    // 2. CRITICAL: Wait for the formal-report-paper to exist in the DOM.
+    try {
+      await page.waitForSelector('.formal-report-paper', { timeout: 10000 });
+    } catch (timeoutErr) {
+      console.error("❌ CSS Selector '.formal-report-paper' not found.");
+      throw new Error("Report paper element not found on the page.");
+    }
+
+    // 3. Optional: Small delay to ensure any CSS animations/badges are finished
+    await new Promise(r => setTimeout(r, 500));
+
+    // 4. Generate the PDF
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true, // Crucial for showing badges and blue headers
+      preferCSSPageSize: true,
+      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
+    });
+
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=Report_${id}.pdf`);
+    res.send(pdfBuffer);
+
+  } catch (err) {
+    if (browser) await browser.close();
+    console.error("❌ PDF Generation Error:", err.message);
+    res.status(500).json({ error: "Failed to capture the report view. Ensure the frontend is running." });
+  }
+});
+
+/**
+ * ✅ GET Single Evaluation (GET /evaluations/:id)
+ */
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT e.*, p.name AS position_name 
+       FROM public.evaluations e
+       JOIN public.positions p ON e.position_id = p.id 
+       WHERE e.id = $1`,
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "Not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching evaluation" });
+  }
+});
 
 /**
  * ✅ CREATE Evaluation (POST /evaluations)
@@ -19,7 +140,6 @@ router.post("/", async (req, res) => {
       training_end 
     } = req.body;
 
-    // 1. Strict Backend Validation
     if (!evaluation || typeof evaluation !== 'object') {
       return res.status(400).json({ error: "Invalid evaluation format." });
     }
@@ -36,7 +156,6 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // 2. Fetch Position Weights and Metadata (Includes s.name for the report)
     const data = await pool.query(`
       SELECT 
         ps.skill_id, 
@@ -58,15 +177,11 @@ router.post("/", async (req, res) => {
     }
 
     const posName = data.rows[0].position_name;
-    
-    // 3. Advanced Calculation Logic (Building the nested object for Frontend)
     const categoryBreakdown = {};
     let finalGeneralScore = 0;
 
     data.rows.forEach(row => {
       const traineeRating = evaluation[row.skill_id] || 0;
-      
-      // Initialize category if not exists
       if (!categoryBreakdown[row.category_name]) {
         categoryBreakdown[row.category_name] = {
           category_avg: 0,
@@ -75,32 +190,23 @@ router.post("/", async (req, res) => {
           skills: [] 
         };
       }
-
-      // Add individual skill detail to the breakdown
       categoryBreakdown[row.category_name].skills.push({
         skill_name: row.skill_name,
-        score: (traineeRating / 20).toFixed(1) // Converts 100% scale to 5.0 scale for display
+        score: (traineeRating / 20).toFixed(1)
       });
-
-      // Add to the category's running weighted total
       categoryBreakdown[row.category_name].total_weighted_points += (traineeRating * row.skill_internal_weight);
     });
 
-    // Finalize category averages and the final overall score
     Object.keys(categoryBreakdown).forEach(cat => {
       const catData = categoryBreakdown[cat];
-      // This is the score for the category (0-100)
       catData.category_avg = Number(catData.total_weighted_points.toFixed(2));
-      // Apply the global category weight to the final general score
       finalGeneralScore += (catData.category_avg * catData.weight);
     });
 
     const finalScoreNum = Number(finalGeneralScore.toFixed(2));
 
-    // 4. --- GEMINI AI GENERATION ---
     let aiFeedback = "Feedback unavailable.";
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
       const prompt = `
         You are a professional corporate trainer. Provide feedback for ${trainee_name} 
         applying for the position of ${posName}.
@@ -113,18 +219,17 @@ router.post("/", async (req, res) => {
         3. Provide a brief objective summary for hiring managers.
       `;
 
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 250, temperature: 0.2 },
+      // Optimized with Fallback Logic
+      aiFeedback = await generateWithFallback(prompt, { 
+        maxOutputTokens: 250, 
+        temperature: 0.2 
       });
 
-      const response = await result.response;
-      aiFeedback = response.text().trim() || aiFeedback;
     } catch (aiErr) {
+      console.error("❌ AI Fallback Failure:", aiErr.message);
       aiFeedback = "AI Feedback timed out or quota exceeded. Please review the scores manually.";
     }
 
-    // 5. Save to PostgreSQL
     const savedEval = await pool.query(
       `INSERT INTO public.evaluations (
         trainee_name, position_id, score, category_breakdown, 
@@ -132,13 +237,9 @@ router.post("/", async (req, res) => {
       ) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at`,
       [
-        trainee_name, 
-        position_id, 
-        finalScoreNum, 
-        JSON.stringify(categoryBreakdown), // Now contains the skills array!
-        aiFeedback,
-        training_start, 
-        training_end    
+        trainee_name, position_id, finalScoreNum, 
+        JSON.stringify(categoryBreakdown), aiFeedback,
+        training_start, training_end    
       ]
     );
 

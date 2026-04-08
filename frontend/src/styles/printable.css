@@ -1,0 +1,106 @@
+/* Specific styles for the PDF Report 
+   Targeting .formal-report-paper 
+*/
+
+.print-mode-wrapper {
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+
+.formal-report-paper {
+    background-color: white;
+    width: 210mm;      /* Standard A4 Width */
+    min-height: 297mm; /* Standard A4 Height */
+    padding: 20mm;     /* Internal document margins */
+    margin: 0 auto;
+    box-sizing: border-box; /* CRITICAL: Keeps padding inside the 210mm */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    box-shadow: none; /* No shadows for PDF */
+    overflow: hidden; /* No scrollbars in PDF */
+}
+
+/* Ensure tables inside the report don't stretch too far */
+.formal-report-paper table {
+    width: 100%;
+    table-layout: fixed; /* Forces table to stay within parent width */
+    border-collapse: collapse;
+}
+
+.formal-report-paper td, 
+.formal-report-paper th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Handle the actual "Print" command from Puppeteer */
+@media print {
+    body {
+        margin: 0;
+        background: white;
+    }
+    .print-mode-wrapper {
+        background: white;
+        padding: 0;
+    }
+    .formal-report-paper {
+        width: 100%; /* Let the PDF engine handle the edges */
+        padding: 10mm;
+        margin: 0;
+    }
+}
+
+/* --- Print/Capture Cleanup --- */
+@media print {
+  .no-print, .btn-toggle-ai, .btn-edit-note, .btn-save-note, .btn-pdf-download,
+  .sidebar, .report-header, .search-container, .header-actions, .top-right-actions, .btn-view {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background-color: white !important;
+  }
+
+  .formal-report-paper {
+    margin: 0 !important;
+    padding: 30px !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact; /* Ensures badges and blue colors render */
+    print-color-adjust: exact;
+  }
+}
+
+body.printing-report .sidebar {
+  display: none !important;
+}
+
+body.printing-report .main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.print-page-container {
+  background-color: white;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+body.printing-report .ai-report-content {
+  display: block !important;
+}

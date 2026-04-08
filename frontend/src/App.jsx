@@ -1,50 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import TraineeForm from "./components/TraineeForm";
 import ReportManager from "./components/ReportManager";
-import AdminPositions from "./components/AdminPositions"; // Import correct file
+import AdminPositions from "./components/AdminPositions";
+import PrintableReport from "./components/PrintableReport"; // Your new print-only component
+import DashboardLayout from "./layouts/DashboardLayout"; // We'll move your sidebar logic here
 import "./styles/app.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("evaluate");
-
   return (
-    <div className="app-layout">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <h2>TrainerHub</h2>
-        </div>
-        <nav className="sidebar-nav">
-          <button 
-            className={activeTab === "evaluate" ? "nav-item active" : "nav-item"}
-            onClick={() => setActiveTab("evaluate")}
-          >
-            📋 Evaluate Trainee
-          </button>
-          
-          <button 
-            className={activeTab === "archive" ? "nav-item active" : "nav-item"}
-            onClick={() => setActiveTab("archive")}
-          >
-            📊 Trainees
-          </button>
+    <Router>
+      <Routes>
+        {/* 1. PUBLIC PRINT ROUTE (Accessible by Puppeteer) */}
+        <Route path="/report-print/:id" element={<PrintableReport />} />
 
-          <div className="sidebar-divider"></div>
-          
-          <button 
-            className={activeTab === "admin" ? "nav-item active" : "nav-item"}
-            onClick={() => setActiveTab("admin")}
-          >
-            ⚙️ Manage Positions
-          </button>
-        </nav>
-      </aside>
-
-      <main className="main-content">
-        {activeTab === "evaluate" && <TraineeForm />}
-        {activeTab === "archive" && <ReportManager />}
-        {activeTab === "admin" && <AdminPositions />}
-      </main>
-    </div>
+        {/* 2. DASHBOARD ROUTES (The main UI) */}
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/evaluate" replace />} />
+          <Route path="evaluate" element={<TraineeForm />} />
+          <Route path="archive" element={<ReportManager />} />
+          <Route path="admin" element={<AdminPositions />} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

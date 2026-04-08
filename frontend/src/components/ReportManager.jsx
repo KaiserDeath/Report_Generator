@@ -10,8 +10,6 @@ function ReportManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editNoteId, setEditNoteId] = useState(null); 
   const [tempNoteValue, setTempNoteValue] = useState("");
-  
-  // State to track which report is showing AI feedback
   const [showAI, setShowAI] = useState({}); 
 
   const fetchEvaluations = async () => {
@@ -83,6 +81,30 @@ function ReportManager() {
   const startEditing = (report) => {
     setEditNoteId(report.id);
     setTempNoteValue(report.trainer_notes || "");
+  };
+
+  /**
+   * ✅ NEW PUPPETEER DOWNLOAD LOGIC
+   * We hit the backend endpoint which returns a PDF stream.
+   */
+  const downloadPDF = (reportId) => {
+    Swal.fire({
+      title: "Preparing Document...",
+      text: "Generating a high-quality PDF on the server.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // We use window.location.href to trigger the download from the backend
+    // Since the backend sets 'Content-Disposition: attachment', the page won't change.
+    window.location.href = `${API_URL}/evaluations/${reportId}/pdf`;
+
+    // Close the loading spinner after a reasonable time
+    setTimeout(() => {
+      Swal.close();
+    }, 3000);
   };
 
   const filteredReports = evaluations.filter(e => 
@@ -168,9 +190,17 @@ function ReportManager() {
                           <div><strong>Position:</strong> {e.position_name}</div>
                           <div><strong>Period:</strong> {formatDate(e.training_start)} - {formatDate(e.training_end)}</div>
                           <div><strong>Score:</strong> {Math.round(e.score)}%</div>
+                          
+                          {/* ✅ PUPPETEER DOWNLOAD TRIGGER */}
+                          <div className="no-print">
+                             <button className="btn-pdf-download" onClick={() => downloadPDF(e.id)}>
+                               📥 Download Professional PDF
+                             </button>
+                          </div>
                         </div>
                       </div>
 
+                      {/* ... rest of your component (Breakdown, AI, Notes) remains the same ... */}
                       <div className="report-doc-section">
                         <h3>Detailed Competency Breakdown</h3>
                         {e.category_breakdown && typeof e.category_breakdown === 'object' ? (
@@ -195,18 +225,16 @@ function ReportManager() {
                         ) : <p>Detailed breakdown unavailable.</p>}
                       </div>
 
-                      {/* --- UNIQUE AI TOGGLE SECTION --- */}
                       <div className="ai-report-container">
                         <div className="ai-report-header">
                           <h3>AI Performance Insights</h3>
                           <button 
-                            className="btn-toggle-ai"
+                            className="btn-toggle-ai no-print"
                             onClick={() => setShowAI(prev => ({ ...prev, [e.id]: !prev[e.id] }))}
                           >
                             {showAI[e.id] ? "Hide AI Report" : "Show AI Report"}
                           </button>
                         </div>
-                        
                         {showAI[e.id] && (
                           <div className="ai-report-content">
                             {e.ai_feedback || "No automated feedback available."}
@@ -217,11 +245,13 @@ function ReportManager() {
                       <div className="report-doc-section">
                         <div className="note-header">
                           <h3>Trainer Observations</h3>
-                          {editNoteId === e.id ? (
-                            <button className="btn-save-note" onClick={() => saveNote(e.id)}>Save</button>
-                          ) : (
-                            <button className="btn-edit-note" onClick={() => startEditing(e)}>Edit</button>
-                          )}
+                          <div className="no-print">
+                            {editNoteId === e.id ? (
+                              <button className="btn-save-note" onClick={() => saveNote(e.id)}>Save</button>
+                            ) : (
+                              <button className="btn-edit-note" onClick={() => startEditing(e)}>Edit</button>
+                            )}
+                          </div>
                         </div>
                         <textarea 
                           value={editNoteId === e.id ? tempNoteValue : (e.trainer_notes || "")}
