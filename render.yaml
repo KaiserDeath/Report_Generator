@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: report-generator-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run install-chrome
+    startCommand: bash start.sh
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/.cache/puppeteer
