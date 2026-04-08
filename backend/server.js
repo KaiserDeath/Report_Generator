@@ -5,21 +5,21 @@ const pool = require("./db");
 
 const app = express();
 
-// Middleware
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
 // --- Routes ---
 
-// 1. Positions Route (Handles Roles and Skill Lists)
+// 1. Positions Route (Handles Weights and Skill Lists)
 const positionsRoutes = require("./routes/positions");
 app.use("/positions", positionsRoutes);
 
-// 2. Evaluations Route (Handles Scoring and Math Logic)
+// 2. Evaluations Route (Handles Scoring, AI, and DELETE requests)
 const evaluationsRoutes = require("./routes/evaluations");
 app.use("/evaluations", evaluationsRoutes);
 
-// --- Health Check & DB Ping ---
+// --- Health Check & DB Connection Test ---
 app.get("/", async (req, res) => {
   try {
     const dbTest = await pool.query("SELECT NOW()");
@@ -29,6 +29,9 @@ app.get("/", async (req, res) => {
     res.status(500).send("API Running but Database Connection Failed.");
   }
 });
+
+// ✅ CLEANUP: The manual app.delete block was removed because 
+// it now lives inside ./routes/evaluations.js
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;

@@ -1,19 +1,20 @@
-/* Consolidated Final App.css */
-
+/* --- Global Styles --- */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f7fb;
   margin: 0;
   padding: 0;
+  color: #333;
 }
 
-.container {
-  max-width: 1100px;
+.container, .admin-container {
+  max-width: 1200px;
   margin: auto;
   padding: 20px;
 }
 
-.card {
+/* --- Card & Layout --- */
+.card, .view-card, .launcher-card {
   background: white;
   padding: 20px;
   margin-bottom: 20px;
@@ -32,10 +33,50 @@ body {
   grid-column: span 2;
 }
 
+/* --- Top-Right Management Button --- */
+.top-right-actions {
+  position: absolute;
+  top: 25px;
+  right: 30px;
+  z-index: 100;
+}
+
+.btn-manage-top {
+  background-color: #ffffff;
+  color: #4a6cf7;
+  border: 1px solid #4a6cf7;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(74, 108, 247, 0.1);
+}
+
+.btn-manage-top:hover {
+  background-color: #4a6cf7;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+}
+
+/* --- Launcher Section (Center Alternative) --- */
+.admin-launcher-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+}
+
+/* --- Typography --- */
 h1 {
   text-align: center;
   margin-bottom: 30px;
   color: #333;
+  font-size: 2rem;
 }
 
 h2 {
@@ -47,113 +88,380 @@ h2 {
 label {
   display: block;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #555;
 }
 
-input, select {
-  padding: 10px;
+/* --- Form Elements --- */
+input, select, textarea {
+  padding: 10px 12px;
   margin: 5px 0 10px 0;
   width: 100%;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #ccc;
   box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95rem;
 }
 
-/* Specific score input behavior */
 .score-input {
   width: 80px !important; 
   text-align: center;
 }
 
-/* Row styling for skills */
-.skill-row {
+.readonly-textarea {
+  background-color: #f8f9fa;
+  color: #666;
+  cursor: not-allowed;
+  border: 1px dashed #ccc;
+  min-height: 100px;
+}
+
+.editing-textarea {
+  border: 1.5px solid #4a6cf7 !important;
+  background-color: #fff !important;
+  box-shadow: 0 0 8px rgba(74, 108, 247, 0.1);
+  min-height: 100px;
+}
+
+/* --- Skill & Item Rows --- */
+.skill-row, .skill-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
-  padding-bottom: 5px;
+  padding: 5px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
+/* --- Buttons --- */
 button {
-  background-color: #4a6cf7;
-  color: white;
-  border: none;
-  padding: 12px 20px;
+  padding: 10px 18px;
   border-radius: 6px;
+  border: none;
   cursor: pointer;
   font-weight: bold;
-  font-size: 1rem;
-  transition: background 0.3s ease;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
 }
 
-button:hover {
-  background-color: #3a58d6;
+.btn-primary { background-color: #4a6cf7; color: white; }
+.btn-success { background-color: #28a745; color: white; padding: 12px 24px; }
+.btn-delete { background-color: #dc3545; color: white; }
+.btn-secondary { background-color: #6c757d; color: white; }
+.btn-small { padding: 5px 12px; font-size: 0.8rem; }
+.btn-view { background-color: #f0f2ff; color: #4a6cf7; border: 1px solid #4a6cf7; }
+.btn-view:hover { background-color: #4a6cf7; color: white; }
+
+/* --- Table Styling --- */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
 }
 
-button:disabled {
-  background-color: #a5b4fc;
-  cursor: not-allowed;
-}
-
-/* Result Area */
-.result-card {
-  margin-top: 30px;
-  border-left: 6px solid #4a6cf7;
-  background-color: #f8faff;
-}
-
-.category-result {
-  background: #f8fafc;
-  padding: 10px;
-  border-radius: 5px;
-  margin: 0;
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid #eee;
-  margin: 20px 0;
-}
-
-.ai-feedback {
-  background: #ffffff;
+th {
+  background-color: #fcfcfc;
   padding: 15px;
-  border-radius: 8px;
-  border: 1px dashed #4a6cf7;
-  line-height: 1.6;
-  color: #2c3e50;
-  font-style: italic;
-  white-space: pre-wrap;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: #7f8c8d;
 }
 
-table {
+td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+/* --- Trainee Row Specifics --- */
+.trainee-info { display: flex; flex-direction: column; gap: 2px; }
+.trainee-name { font-size: 1rem; color: #2c3e50; }
+.position-subtext { font-size: 0.8rem; color: #95a5a6; font-weight: normal; }
+.report-date { font-size: 0.9rem; color: #34495e; font-family: 'Courier New', Courier, monospace; }
+.grade-cell { text-align: center; font-weight: bold; }
+
+.badge-score {
+  background: #e1f5fe;
+  color: #0288d1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  display: inline-block;
+  min-width: 45px;
+}
+
+/* --- Dashboard & Sidebar Layout --- */
+.app-layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  position: fixed;
+  height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  padding: 40px;
+  background-color: #f5f7fb;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #555;
+  transition: all 0.2s ease;
+  width: calc(100% - 20px);
+  margin: 0 10px;
+}
+
+.nav-item.active { background-color: #4a6cf7; color: white; font-weight: bold; }
+.sidebar-divider { height: 1px; background-color: #eee; margin: 15px 20px; }
+
+/* --- Position Manager / Admin Logic --- */
+.admin-container .card { border-left: 5px solid #4a6cf7; }
+.cat-impact-box { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.static-skill-weight { font-size: 0.85rem; color: #7f8c8d; background: #f1f2f6; padding: 2px 8px; border-radius: 4px; }
+
+/* --- Formal Report "Paper" Document --- */
+.formal-report-paper {
+  background: #ffffff;
+  margin: 30px auto;
+  max-width: 800px;
+  padding: 50px;
+  border: 1px solid #ddd;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  border-radius: 4px;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.report-doc-header {
+  border-bottom: 2px solid #4a6cf7;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.doc-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 15px;
+  font-size: 0.95rem;
+}
+
+.report-doc-section {
+  margin-bottom: 30px;
+}
+
+.report-doc-section h3 {
+  font-size: 1.1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* --- Category & Skill Groups inside Report --- */
+.report-category-group {
+  margin-bottom: 25px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.report-category-header {
+  background: #f8f9fa;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+  color: #4a6cf7;
+}
+
+.report-skill-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th {
-  background-color: #4a6cf7;
+.report-skill-table td {
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #fafafa;
+}
+
+.text-right { text-align: right; }
+
+/* --- Feedback & Notes Area --- */
+.ai-feedback-box {
+  line-height: 1.6;
+  background: #fdfdfd;
+  padding: 15px;
+  border-radius: 4px;
+  font-style: italic;
+  border: 1px solid #eee;
+}
+
+.report-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #eee;
+  padding: 10px;
+  font-family: inherit;
+  background: #fdfdfd;
+  font-size: 1rem;
+}
+
+.report-textarea.editing {
+  border: 1.5px solid #4a6cf7;
+  background-color: #fff;
+}
+
+.report-doc-footer {
+  margin-top: 40px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.btn-pdf-dummy {
+  background: #e74c3c;
   color: white;
-  padding: 12px;
-  text-align: left;
+  padding: 10px 20px;
 }
 
-td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-tr:nth-child(even) {
-  background-color: #fcfcfc;
-}
-
+/* --- Responsive Layout --- */
 @media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .full-width {
-    grid-column: span 1;
-  }
+  .sidebar { width: 100%; height: auto; position: relative; }
+  .main-content { margin-left: 0; padding: 20px; }
+  .doc-meta-grid { grid-template-columns: 1fr; }
+}
+
+/* --- The Dark Background --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75); /* Darken the background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* High number to stay on top of everything */
+  backdrop-filter: blur(5px); /* Modern blur effect */
+}
+
+/* --- The White Popup Box --- */
+.modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- AI Insights Styling --- */
+.ai-feedback-section {
+  background: #f8faff;
+  border-left: 6px solid #4a6cf7;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.ai-feedback-section h4 {
+  margin-top: 0;
+  color: #4a6cf7;
+  font-size: 1.2rem;
+}
+
+/* --- Trainer Notes Styling --- */
+.trainer-note-area textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 15px;
+  margin-top: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.trainer-note-area textarea:focus {
+  border-color: #4a6cf7;
+  outline: none;
+}
+
+.trainer-note-area textarea.readonly-textarea {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+/* Container for the AI toggle logic */
+.ai-report-container {
+  margin: 20px 0;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
+}
+
+/* Header row for the AI section */
+.ai-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* The Box that appears when toggled */
+.ai-report-content {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8faff; /* Light distinct background */
+  border-left: 4px solid #4a6cf7; /* Distinct blue accent */
+  border-radius: 4px;
+  line-height: 1.6;
+  white-space: pre-wrap; /* Ensures AI line breaks are respected */
+}
+
+/* Toggle button specific styling */
+.btn-toggle-ai {
+  background: none;
+  border: 1px solid #4a6cf7;
+  color: #4a6cf7;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-ai:hover {
+  background: #4a6cf7;
+  color: white;
 }

@@ -23,13 +23,11 @@ router.get("/skills/all", async (req, res) => {
         s.id, 
         s.name, 
         s.category_id, 
-        c.name AS category_name  -- <--- THIS IS THE MISSING LINK
+        c.name AS category_name
       FROM public.skills s
       JOIN public.categories c ON s.category_id = c.id
       ORDER BY c.id ASC, s.name ASC
     `);
-    
-    console.log("Sending to Frontend:", result.rows); // Check your terminal!
     res.json(result.rows);
   } catch (err) {
     console.error("❌ SQL ERROR:", err.message);
@@ -37,15 +35,23 @@ router.get("/skills/all", async (req, res) => {
   }
 });
 
-// ✅ 3. SAVE INDIVIDUAL SKILL WEIGHTS (e.g., English = 0.50 within Soft Skills)
+// ✅ 3. SAVE INDIVIDUAL SKILL WEIGHTS
 router.post("/:id/weights", async (req, res) => {
   const positionId = req.params.id;
-  const weights = req.body; // { "skill_id": 0.20, "skill_id_2": 0.80 }
+  const weights = req.body; 
 
   try {
+    // ✅ MERGED: Strict Validation for weights
+    for (const [skillId, weightValue] of Object.entries(weights)) {
+      // Since weights are stored as decimals (0.50), we multiply by 100 to check 0-100 range
+      const checkValue = weightValue * 100;
+      if (weightValue < 0 || weightValue > 1) {
+        return res.status(400).json({ error: "Skill weights must be between 0% and 100%." });
+      }
+    }
+
     await pool.query("BEGIN");
 
-    // Clear old skill weights for this position
     await pool.query(
       "DELETE FROM public.position_skills WHERE position_id = $1",
       [positionId]
@@ -70,16 +76,21 @@ router.post("/:id/weights", async (req, res) => {
   }
 });
 
-// ✅ 4. SAVE GLOBAL CATEGORY WEIGHTS (e.g., Soft Skills = 0.40 for Bilingual)
-// This handles the Bilingual (40/35/25) vs Operations (27/33/40) logic
+// ✅ 4. SAVE GLOBAL CATEGORY WEIGHTS
 router.post("/:id/category-weights", async (req, res) => {
   const positionId = req.params.id;
-  const { categoryWeights } = req.body; // { "cat_id_1": 0.40, "cat_id_2": 0.35 }
+  const { categoryWeights } = req.body; 
 
   try {
+    // ✅ MERGED: Strict Validation for category weights
+    for (const [catId, weightValue] of Object.entries(categoryWeights)) {
+      if (weightValue < 0 || weightValue > 1) {
+        return res.status(400).json({ error: "Category impact must be between 0% and 100%." });
+      }
+    }
+
     await pool.query("BEGIN");
 
-    // Clear old category weights for this position
     await pool.query(
       "DELETE FROM public.position_category_weights WHERE position_id = $1",
       [positionId]
@@ -102,12 +113,9 @@ router.post("/:id/category-weights", async (req, res) => {
 });
 
 // ✅ 5. GET SKILLS + WEIGHTS + CAT WEIGHTS for a specific position
-// Used by TraineeForm and Admin to see current setup
 router.get("/:id/weights", async (req, res) => {
   const { id } = req.params;
   try {
-    // This query pulls the skills and their internal weights, 
-    // PLUS the global weight of the category they belong to
     const result = await pool.query(`
       SELECT 
         s.id, 
