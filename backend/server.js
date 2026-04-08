@@ -11,11 +11,11 @@ app.use(express.json());
 
 // --- Routes ---
 
-// 1. Positions Route (Handles Weights and Skill Lists)
+// 1. Positions Route
 const positionsRoutes = require("./routes/positions");
 app.use("/positions", positionsRoutes);
 
-// 2. Evaluations Route (Handles Scoring, AI, and DELETE requests)
+// 2. Evaluations Route (THIS IS WHERE THE PDF LOGIC LIVES)
 const evaluationsRoutes = require("./routes/evaluations");
 app.use("/evaluations", evaluationsRoutes);
 
@@ -30,13 +30,10 @@ app.get("/", async (req, res) => {
   }
 });
 
-// ✅ CLEANUP: The manual app.delete block was removed because 
-// it now lives inside ./routes/evaluations.js
-
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📍 Positions API: http://localhost:${PORT}/positions`);
-  console.log(`📍 Evaluations API: http://localhost:${PORT}/evaluations`);
+  // Useful for logs on Render to see which URL is being targeted
+  console.log(`📍 Frontend Target: ${process.env.FRONTEND_URL}`);
 });

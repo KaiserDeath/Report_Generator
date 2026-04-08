@@ -13,6 +13,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
  */
 async function generateWithFallback(prompt, config) {
   const modelWishlist = [
+    'gemini-1.5-pro',
+    'gemini-1.5-flash',
     'gemini-3.1-pro-preview',
     'gemini-3.1-flash-lite-preview',
     'gemini-2.5-pro',
@@ -38,16 +40,14 @@ async function generateWithFallback(prompt, config) {
     } catch (err) {
       console.warn(`⚠️ ${modelName} failed: ${err.message}`);
       lastError = err;
-      // Continue to next model in wishlist
     }
   }
-  // If we exhaust the list, throw the last caught error
   throw lastError;
 }
 
 /**
  * ✅ MERGED & IMPROVED: GENERATE PDF (GET /evaluations/:id/pdf)
- * Captures specifically the "formal-report-paper" view from the frontend.
+ * Optimized for Render.com deployment with full logging.
  */
 router.get("/:id/pdf", async (req, res) => {
   let browser;
@@ -55,6 +55,7 @@ router.get("/:id/pdf", async (req, res) => {
     const { id } = req.params;
 
     browser = await puppeteer.launch({
+      // Uses the custom cache path defined in .puppeteerrc.cjs for Render
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
       headless: "new",
       args: [
@@ -62,31 +63,30 @@ router.get("/:id/pdf", async (req, res) => {
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
+        "--single-process",
+        "--no-zygote"
       ],
     });
 
     const page = await browser.newPage();
 
-    // Listen for console messages and errors from the page
+    // Listen for console messages and errors from the page (Preserved Logging)
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
     page.on('error', err => console.error('PAGE ERROR:', err));
     page.on('pageerror', err => console.error('PAGE CRASH:', err));
 
-    // Set viewport to a standard desktop size for high-quality capture
     await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
 
-    // Target the specific "Printable" route on your frontend
     const targetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/report-print/${id}`;
 
     console.log(`📡 Puppeteer is navigating to: ${targetUrl}`);
 
-    // 1. Navigate to the page
     await page.goto(targetUrl, {
       waitUntil: ["networkidle0", "domcontentloaded"],
       timeout: 60000
     });
 
-    // 2. CRITICAL: Wait for the formal-report-paper to exist in the DOM.
+    // Wait for the specific report paper element
     try {
       await page.waitForSelector('.formal-report-paper', { timeout: 20000 });
     } catch (timeoutErr) {
@@ -94,13 +94,11 @@ router.get("/:id/pdf", async (req, res) => {
       throw new Error("Report paper element not found on the page.");
     }
 
-    // 3. Optional: Small delay to ensure any CSS animations/badges are finished
     await new Promise(r => setTimeout(r, 500));
 
-    // 4. Generate the PDF
     const pdfBuffer = await page.pdf({
       format: "A4",
-      printBackground: true, // Crucial for showing badges and blue headers
+      printBackground: true, 
       preferCSSPageSize: true,
       margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
     });
@@ -114,7 +112,6 @@ router.get("/:id/pdf", async (req, res) => {
   } catch (err) {
     if (browser) await browser.close();
     console.error("❌ PDF Generation Error:", err.message);
-    console.error("Full error stack:", err.stack);
     res.status(500).json({ error: `PDF Generation failed: ${err.message}` });
   }
 });
@@ -153,6 +150,7 @@ router.post("/", async (req, res) => {
       training_end 
     } = req.body;
 
+    // --- Validation Logic Preserved ---
     if (!evaluation || typeof evaluation !== 'object') {
       return res.status(400).json({ error: "Invalid evaluation format." });
     }
@@ -232,7 +230,6 @@ router.post("/", async (req, res) => {
         3. Provide a brief objective summary for hiring managers.
       `;
 
-      // Optimized with Fallback Logic
       aiFeedback = await generateWithFallback(prompt, { 
         maxOutputTokens: 250, 
         temperature: 0.2 
