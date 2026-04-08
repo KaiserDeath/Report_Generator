@@ -3,8 +3,8 @@ services:
     name: report-generator-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npm run install-chrome
-    startCommand: bash start.sh
+    buildCommand: npm install && npx puppeteer browsers install chrome
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
