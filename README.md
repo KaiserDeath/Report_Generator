@@ -97,7 +97,11 @@ GET,/evaluations/:id/pdf,Generates and streams a professional PDF.
 GET,/evaluations,Retrieves full evaluation history.
 PATCH,/evaluations/:id/notes,Updates manual trainer observations.
 DELETE,/evaluations/:id,Permanently removes a report.
-
+GET	/positions	Fetches all job roles for dropdown menus.
+GET	/positions/skills/all	Lists every skill in the DB grouped by category.
+POST	/positions/:id/weights	Saves specific skill weights for a role (SQL Transaction).
+POST	/positions/:id/category-weights	Sets the global impact percentage for categories.
+GET	/positions/:id/weights	Retrieves the full math config for a specific position.
 ---
 
 🧪 AI Resiliency System
