@@ -227,9 +227,9 @@ router.post("/", async (req, res) => {
         - Overall Performance: ${finalScoreNum}%
         - Category Scores: ${JSON.stringify(categoryBreakdown)}
         Your response must be EXACTLY 3 sentences long:
-        1. State a clear strength.
-        2. State a clear area for development.
-        3. Provide a brief objective summary for hiring managers.
+        1. State a clear strength based on the highest-scoring data point.
+        2. State a clear area for development, identifying the most critical performance gap.
+        3. Provide a brief objective summary for hiring agents regarding the candidate's current readiness for the role.
       `;
 
       // Optimized with Fallback Logic
